@@ -14,9 +14,9 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='uPKI',
-    description='PKI made easy',
-    long_description='uPKI is a small PKI in python that should let you make basic tasks without effort',
+    name='uPKI_CLI',
+    description='µPKI client',
+    long_description='µPKI client is an easy-to-use script that should allow you to generate certificates securely (private key and CSR stay on client side)',
     author=metadata['author'],
     author_email=metadata['authoremail'],
     version=metadata['version'],
@@ -26,7 +26,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Intended Audience :: System Administrators'
       ],
-    url='https://github.com/proh4cktive/upki',
+    url='https://github.com/proh4cktive/upki-cli',
     packages=find_packages(),
     license='MIT',
     install_requires=requirements

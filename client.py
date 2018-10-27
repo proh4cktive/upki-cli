@@ -4,9 +4,6 @@
 import sys, os, re
 import argparse, logging
 
-import utils
-import ca
-
 def main(argv):
     BASE_DIR    = os.path.join(os.path.expanduser("~"), '.upki')
     LOG_FILE    = ".upki.log"
@@ -18,7 +15,7 @@ def main(argv):
     with open("__metadata.py", 'rt') as meta_file:
         metadata = dict(re.findall(r"^__([a-z]+)__ = ['\"]([^'\"]*)['\"]", meta_file.read(), re.M))
     
-    parser = argparse.ArgumentParser(description="µPki [maɪkroʊ ˈpiː-ˈkeɪ-ˈaɪ] is a small PKI in python that should let you make basic tasks without effort.")
+    parser = argparse.ArgumentParser(description="µPki-CLI is the µPKI client.")
     parser.add_argument("-q", "--quiet", help="Output less infos", action="store_true")
     parser.add_argument("-d", "--debug", help="Enable debug mode", action="store_true")
     parser.add_argument("-l", "--log", help="Define log file (default: {f})".format(f=os.path.join(BASE_DIR,LOG_FILE)))
@@ -26,7 +23,6 @@ def main(argv):
 
     # Allow subparsers
     subparsers = parser.add_subparsers(title='commands')
-
 
 
 if __name__ == '__main__':
