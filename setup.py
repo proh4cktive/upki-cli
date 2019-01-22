@@ -16,7 +16,7 @@ with open('requirements.txt') as f:
 setup(
     name='uPKI_CLI',
     description='µPKI client',
-    long_description='µPKI client is an easy-to-use script that should allow you to generate certificates securely (private key and CSR stay on client side)',
+    long_description=open('README.md').read(),
     author=metadata['author'],
     author_email=metadata['authoremail'],
     version=metadata['version'],
