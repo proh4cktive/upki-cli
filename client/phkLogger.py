@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import sys, os
+import os
+import sys
 import logging
 import logging.handlers
 
@@ -21,22 +22,29 @@ class PHKLogger(object):
 
         try:
             os.makedirs(os.path.dirname(filename))
-        except OSError as exc:
-            if exc.errno == os.errno.EEXIST and os.path.isdir(os.path.dirname(filename)):
-                pass
-            else:
-                raise exc
+        except OSError as err:
+            if (err.errno != os.errno.EEXIST) or not os.path.isdir(os.path.dirname(filename)):
+                raise Exception(err)
+            pass
+
         try:
             handler = logging.handlers.TimedRotatingFileHandler(filename, when=when, backupCount=backup)
         except IOError:
             sys.stderr.write('[!] Unable to write to log file: {f}\n'.format(f=filename))
             sys.exit(1)
+        
         formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         self.logger.setLevel(self.level)
 
         self.verbose = verbose
+    
+    def _is_string(self, string):
+        try:
+            return isinstance(string, str)
+        except NameError:
+            return isinstance(string, basestring)
 
     def debug(self, msg, color=None, light=None):
         """Shortcut to debug message
@@ -79,7 +87,7 @@ class PHKLogger(object):
             level = self.level
         
         # Convert string level to logging int
-        if isinstance(level,str):
+        if self._is_string(level):
             level = level.upper()
             if level == "DEBUG":
                 level = logging.DEBUG
@@ -92,7 +100,7 @@ class PHKLogger(object):
             elif level == "CRITICAL":
                 level = logging.CRITICAL
             else:
-                raise Exception('Invalid log level')
+                level = self.level
 
         # Output to with correct level
         if level == logging.DEBUG:

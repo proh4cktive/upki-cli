@@ -1,7 +1,84 @@
-![ProHacktive](https://prohacktive.io/public/images/logo_gray.png "uPKI from ProHacktive.io")
+![ProHacktive](https://prohacktive.io/public/images/logo-prohacktive-grey-dark.svg "uPKI from ProHacktive.io")
 
 # µPKI-CLI
-*NOT FOR PRODUCTION USE*
+***NOT READY FOR PRODUCTION USE***
+This project has only been tested on Debian 9 Strech with Python3.6.
+Due to python usage it *SHOULD* works on many other configurations, but it has NOT been tested.
 
 ## 1. About
-µPki-CLI is the client that interact with the [µPKI-RA](https://github.com/proh4cktive/upki-ra) Registration Authority.
+µPki [maɪkroʊ ˈpiː-ˈkeɪ-ˈaɪ] is a small PKI in python that should let you make basic tasks without effort.
+It works in combination with:
+> - [µPKI-CA](https://github.com/proh4cktive/upki)
+> - [µPKI-RA](https://github.com/proh4cktive/upki-ra)
+> - [µPKI-WEB](https://github.com/proh4cktive/upki-web)
+
+µPki-CLI is the client app that interact with the [µPKI-RA](https://github.com/proh4cktive/upki-ra) Registration Authority.
+
+### 1.1 Dependencies
+The following modules are required
+- Requests
+
+## 2. Install
+The Installation process require three different phases:
+
+1. clone the current repository
+```bash
+git clone https://github.com/proh4cktive/upki-ra
+cd ./upki-ra
+```
+
+2. Install the dependencies and upki-client service timer in order to re-generate local certificates if needed. Registration Authority URL is required at this step 
+```bash
+sudo ./install.sh --url https://certificates.domain.com
+```
+
+3. Setup certificates required (cf. Usage below)
+
+## 3. Usage
+µPki-CLI is the µPki client and should be installed on server/customer host that will receive the final certificate. µPki-CLI is responsible for private key and certificate request generation.
+
+### 3.1 Add a certificate
+*Note: On basic configuration you can add a certificate localy only if it add been registered on RA by an admin. To setup your Registration Authority (RA) please check [µPKI-RA](https://github.com/proh4cktive/upki-ra).*
+
+Call the client script with 'add' action
+```bash
+./client.py --url https://certificates.domain.com add
+```
+
+### 3.2 List all certificates
+You can list all certificates registered locally (this does not reflect what is configured on the RA server).
+```bash
+./client.py --url https://certificates.domain.com list
+```
+
+### 3.3 Delete a certificate
+You can un-register a locally defined certificate (note: this will not affect RA configuration).
+```bash
+./client.py --url https://certificates.domain.com delete
+```
+
+### 3.4 Renew all certificates
+You can force a certificate renewal for all certificate, which is basicaly what the upki-client services timer is doing.
+```bash
+./client.py --url https://certificates.domain.com renew
+```
+
+### 3.5 Help
+For more advanced usage please check the app help global
+```bash
+./client.py --help
+```
+
+You can also have specific help for each actions
+```bash
+./client.py --url https://certificates.domain.com add --help
+```
+
+## 4. TODO
+Until being ready for production some tasks remains:
+> - Setup Unit Tests
+> - Refactoring of Bot class
+> - Migrate storage to TinyDB or sqlite
+> - Store URL in config file
+> - Associate each node with specific URL in order to allow support for multiple RA
+> - Add uninstall.sh script
