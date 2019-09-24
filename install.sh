@@ -59,7 +59,7 @@ fi
 pip3 install -r requirements.txt
 
 # Create cli service
-sudo cat <<EOT > /etc/systemd/system/upki-cli.service
+sudo tee /etc/systemd/system/upki-cli.service > /dev/null <<EOT
 [Unit]
 Description=µPki Client Renewal service
 ConditionACPower=true
@@ -78,7 +78,7 @@ WantedBy=upki-cli.timer
 EOT
 
 # Create Client certificate renewal service timer (every days @ 2:AM)
-sudo cat <<EOT > /etc/systemd/system/upki-cli.timer
+sudo tee /etc/systemd/system/upki-cli.timer > /dev/null <<EOT
 [Unit]
 Description=µPki Client certificate renewal service timer
 

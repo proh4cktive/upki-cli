@@ -18,6 +18,12 @@ It works in combination with:
 The following modules are required
 - Requests
 
+Some systems libs & tools are also required, make sure you have them pre-installed
+```bash
+sudo apt update
+sudo apt -y install build-essential python3-dev python3-pip git
+```
+
 ## 2. Install
 The Installation process require three different phases:
 
@@ -29,7 +35,7 @@ cd ./upki-ra
 
 2. Install the dependencies and upki-client service timer in order to re-generate local certificates if needed. Registration Authority URL is required at this step 
 ```bash
-sudo ./install.sh --url https://certificates.domain.com
+./install.sh --url https://certificates.domain.com
 ```
 
 3. Setup certificates required (cf. Usage below)
