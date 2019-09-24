@@ -55,10 +55,18 @@ if [[ -z "$UPKI_URL" ]]; then
     done
 fi
 
+# Update system & install required apps
+echo "[+] Update system"
+sudo apt -y update && sudo apt -y upgrade
+echo "[+] Install required apps"
+sudo apt -y install build-essential libssl-dev libffi-dev python3-dev python3-pip git
+
 # Install required libs
+echo "[+] Install required libs"
 pip3 install -r requirements.txt
 
 # Create cli service
+echo "[+] Create services"
 sudo tee /etc/systemd/system/upki-cli.service > /dev/null <<EOT
 [Unit]
 Description=µPki Client Renewal service
@@ -93,6 +101,21 @@ Persistent=true
 WantedBy=timers.target
 EOT
 
-# Activate services & timers
+# Reload timers
 sudo systemctl daemon-reload
-sudo systemctl enable upki-cli.timer
+
+echo "Do you wish to activate uPKI client service on boot?"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes )
+            # Start uPKI service
+            echo "[+] Activate service"
+            sudo systemctl enable upki-cli.timer
+            sudo service upki-cli start
+            break;;
+        No ) exit;;
+    esac
+done
+
+echo "[+] All done"
+echo ""
