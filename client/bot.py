@@ -427,22 +427,27 @@ class Bot(object):
 
         if os.path.isfile(key_file):
             try:
-                __delete_file(key_file)
+                self.__delete_file(key_file)
             except Exception as err:
                 raise Exception('Unable to delete private key: {e}'.format(e=err))
         if os.path.isfile(req_file):
             try:
-                __delete_file(req_file)
+                self.__delete_file(req_file)
             except Exception as err:
                 raise Exception('Unable to delete certificate request: {e}'.format(e=err))
         if os.path.isfile(crt_file):
             try:
-                __delete_file(crt_file)
+                self.__delete_file(crt_file)
             except Exception as err:
                 raise Exception('Unable to delete certificate: {e}'.format(e=err))
+        if os.path.isfile(pem_file):
+            try:
+                self.__delete_file(pem_file)
+            except Exception as err:
+                raise Exception('Unable to delete pem certificate: {e}'.format(e=err))
         if os.path.isfile(p12_file):
             try:
-                __delete_file(p12_file)
+                self.__delete_file(p12_file)
             except Exception as err:
                 raise Exception('Unable to delete p12 certificate: {e}'.format(e=err))
 
