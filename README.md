@@ -69,7 +69,14 @@ You can force a certificate renewal for all certificate, which is basicaly what 
 ./client.py --url https://certificates.domain.com renew
 ```
 
-### 3.5 Help
+### 3.5 Renew Certificates Revokation List
+Re-download CRL, useful when client is a server and web server needs to have an updated list.
+An example systemd timer for Nginx is given in *upki-cli-crl.service* and *upki-cli-crl.timer*
+```bash
+./client.py --url https://certificates.domain.com crl
+```
+
+### 3.6 Help
 For more advanced usage please check the app help global
 ```bash
 ./client.py --help
