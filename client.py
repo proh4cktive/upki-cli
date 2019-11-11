@@ -38,6 +38,9 @@ def main(argv):
     parser_renew = subparsers.add_parser('renew', help="Renew nodes registered.")
     parser_renew.set_defaults(which='renew')
     
+    parser_crl = subparsers.add_parser('crl', help="Regenerate CRL.")
+    parser_crl.set_defaults(which='crl')
+    
     parser_list = subparsers.add_parser('list', help="List nodes registered.")
     parser_list.set_defaults(which='list')
     
@@ -101,6 +104,13 @@ def main(argv):
         try:
             # Renew all nodes in config
             bot.renew()
+        except Exception as err:
+            logger.error(err)
+            sys.exit(1)
+    elif args.which == 'crl':
+        try:
+            # Regenerate CRL file
+            bot.crl()
         except Exception as err:
             logger.error(err)
             sys.exit(1)

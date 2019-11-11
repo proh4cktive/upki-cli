@@ -21,6 +21,7 @@ class Bot(object):
         self._path   = path
         self._ra_url = ra_url
         self.ca_cert = os.path.join(self._path, 'ca.crt')
+        self.crl_crt = os.path.join(self._path, 'crl.pem')
         
         try:
             self.collection = client.Collection(self._path)
@@ -371,6 +372,24 @@ class Bot(object):
                     os.chmod(p12_file, 0o400)
                 except Exception as err:
                     raise Exception('Unable to protect certificate p12 file')
+
+        return True
+
+    def crl(self):
+        try:
+            self._output('Retrieve CRL', level="DEBUG")
+            data = self.__request(self._ra_url + '/certs/crl.pem')
+        except Exception as err:
+            raise Exception(err)
+
+        try:
+            crl_pem = data['certificate']
+        except KeyError:
+            raise Exception('Unable to retrieve CRL')
+
+        # Rewrite CRL file
+        with open(self.crl_crt,'wt') as f:
+            f.write(crl_pem)
 
         return True
 
