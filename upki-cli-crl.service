@@ -6,9 +6,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=root
-Group=root
-Restart=always
+User=jdoe
+Group=jdoe
+Restart=on-failure
 WorkingDirectory=/opt/upki-cli
 ExecStart=/usr/bin/python3 ./client.py --url certificates.domain.com crl
 ExecStartPost=/usr/sbin/service nginx restart

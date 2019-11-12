@@ -78,7 +78,7 @@ Wants=network-online.target
 Type=simple
 User=${USERNAME}
 Group=${GROUPNAME}
-Restart=always
+Restart=on-failure
 ExecStart=${INSTALL}/client.py --url ${UPKI_URL} renew
 
 [Install]
