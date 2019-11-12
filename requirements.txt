@@ -1,2 +1,2 @@
 setuptools==41.2.0
-requests==2.19.1
+requests>=2.20.0
