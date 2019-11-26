@@ -29,8 +29,8 @@ The Installation process require three different phases:
 
 1. clone the current repository
 ```bash
-git clone https://github.com/proh4cktive/upki-ra
-cd ./upki-ra
+git clone https://github.com/proh4cktive/upki-cli
+cd ./upki-cli
 ```
 
 2. Install the dependencies and upki-client service timer in order to re-generate local certificates if needed. Registration Authority URL is required at this step 
