@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
-import re
+import re, sys
 from setuptools import setup, find_packages
 
 # Retrieve all metadata from project
 with open("__metadata.py") as meta_file:
-    metadata = dict(re.findall("__([a-z]+)__\s*=\s*'([^']+)'", meta_file.read()))
+    metadata = dict(re.findall("(?:\_\_([\w\-]+)\_\_)(?:[\s]+)?\=(?:[\s]+)?(?:[\"|\'])?([a-zA-Z0-9\-\_\.\+\,\$\@\s\:\/]+)?(?:[\"|\'])?", meta_file.read()))
 
 # Get required packages from requirements.txt
 # Make it compatible with setuptools and pip
