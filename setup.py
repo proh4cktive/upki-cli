@@ -13,7 +13,7 @@ with open(os.path.join(dirname, '__metadata.py'), 'rt') as meta_file:
 
 # Get required packages from requirements.txt
 # Make it compatible with setuptools and pip
-with open(os.path.join(dirname, 'requirements.txt')) as f:
+with open(os.path.join(dirname, 'requirements.txt'), 'rt') as f:
     requirements = f.read().splitlines()
 
 setup(
