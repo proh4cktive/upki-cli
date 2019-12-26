@@ -78,9 +78,11 @@ def main(argv):
 
     LOG_FILE = os.path.join(BASE_DIR, LOG_FILE)
 
+    dirname = os.path.dirname(__file__)
+    
     # Retrieve all metadata from project
-    with open("__metadata.py", 'rt') as meta_file:
-        metadata = dict(re.findall(r"^__([a-z]+)__ = ['\"]([^'\"]*)['\"]", meta_file.read(), re.M))
+    with open(os.path.join(dirname, "__metadata.py"), 'rt') as meta_file:
+        metadata = dict(re.findall("(?:\_\_([\w\-]+)\_\_)(?:[\s]+)?\=(?:[\s]+)?(?:[\"|\'])?([a-zA-Z0-9\-\_\.\+\,\$\@\s\:\/]+)?(?:[\"|\'])?", meta_file.read()))
     
     # Generate logger object
     logger = client.PHKLogger(LOG_FILE, LOG_LEVEL, proc_name="upki CLI", verbose=VERBOSE)
