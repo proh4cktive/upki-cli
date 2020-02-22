@@ -45,22 +45,15 @@ class Collection(object):
 
         return (key, cert)
 
-    def register(self, name, profile, sans, p12=False, passwd=None, throwExceptionIfNodeExists=True):
+    def register(self, name, profile, sans, p12=False, passwd=None):
         node = dict({'state': 'init','name': name, 'profile': profile, 'sans': sans, 'p12': p12, 'passwd': passwd})
 
-        # flag to detect if node will be found in the following iterating loop
-        nodeFound = False
         for n in self.nodes:
             if (n['name'] == node['name']) and (n['profile'] == node['profile']):
-                if throwExceptionIfNodeExists:
-                    raise Exception('This node already exists')
-                else:
-                    nodeFound = True
-                    break
+                raise Exception('This node already exists')
 
         # Append node to list
-        if not nodeFound:
-            self.nodes.append(node)
+        self.nodes.append(node)
 
         try:
             self.__update(self.nodes)
