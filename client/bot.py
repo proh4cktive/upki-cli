@@ -163,7 +163,7 @@ class Bot(object):
 
         return True
 
-    def add_node(self, name, profile, sans=[], p12=False, passwd=None):
+    def add_node(self, name, profile, sans=[], p12=False, passwd=None, throwExceptionIfNodeExists=True):
         if name is None:
             name = input('Enter your node name (CN): ')
         if profile is None:
@@ -176,7 +176,7 @@ class Bot(object):
             raise Exception(err)
 
         try:
-            self.collection.register(name, profile, sans, p12=p12, passwd=passwd)
+            self.collection.register(name, profile, sans, p12=p12, passwd=passwd, throwExceptionIfNodeExists=throwExceptionIfNodeExists)
         except Exception as err:
             raise Exception('Unable to add node: {e}'.format(e=err))
 

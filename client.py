@@ -34,6 +34,8 @@ def main(argv):
     parser_add.add_argument("-p", "--profile", help="Set the profile name for node", default=None)
     parser_add.add_argument("--p12", help="Generate a p12 certificate file (default: .pem only)", action="store_true", default=False)
     parser_add.add_argument("--passwd", help="Protect p12 file with pass (default: False)", action="store", default=None)
+    parser_add.add_argument("--throw-node-exists", help="Throw an exception if node exists (default: True)", action="store", default=True)
+
     
     parser_renew = subparsers.add_parser('renew', help="Renew nodes registered.")
     parser_renew.set_defaults(which='renew')
@@ -96,7 +98,7 @@ def main(argv):
     if args.which == 'add':
         try:
             # Register node in local config
-            bot.add_node(args.name, args.profile, p12=args.p12, passwd=args.passwd)
+            bot.add_node(args.name, args.profile, p12=args.p12, passwd=args.passwd, throwExceptionIfNodeExists=args.throwNodeExists)
         except Exception as err:
             logger.error(err)
             sys.exit(1)
