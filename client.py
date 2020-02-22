@@ -80,12 +80,19 @@ def main(argv):
 
     LOG_FILE = os.path.join(BASE_DIR, LOG_FILE)
 
+    try:
+        # Generate logger object
+        logger = client.PHKLogger(LOG_FILE, LOG_LEVEL, proc_name="upki CLI", verbose=VERBOSE)
+    except Exception as err:
+        raise Exception('Unable to setup logger: {e}'.format(e=err))
+
+    # Meta information
+    dirname = os.path.dirname(__file__)
+
     # Retrieve all metadata from project
-    with open("__metadata.py", 'rt') as meta_file:
+    with open(os.path.join(dirname, '__metadata.py'), 'rt') as meta_file:
         metadata = dict(re.findall(r"^__([a-z]+)__ = ['\"]([^'\"]*)['\"]", meta_file.read(), re.M))
     
-    # Generate logger object
-    logger = client.PHKLogger(LOG_FILE, LOG_LEVEL, proc_name="upki CLI", verbose=VERBOSE)
     logger.info("\t\t..:: µPKI Client ::..", color="WHITE", light=True)
     logger.info("version: {v}".format(v=metadata['version']), color="WHITE")
 
