@@ -34,7 +34,7 @@ def main(argv):
     parser_add.add_argument("-p", "--profile", help="Set the profile name for node", default=None)
     parser_add.add_argument("--p12", help="Generate a p12 certificate file (default: .pem only)", action="store_true", default=False)
     parser_add.add_argument("--passwd", help="Protect p12 file with pass (default: False)", action="store", default=None)
-    parser_add.add_argument("--throw-node-exists", help="Throw an exception if node exists (default: True)", action="store", default=True)
+    parser_add.add_argument("--throw-node-exists", help="Throw an exception if node exists (default: True)", action="store_true", default=False)
 
     
     parser_renew = subparsers.add_parser('renew', help="Renew nodes registered.")
