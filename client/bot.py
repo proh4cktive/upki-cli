@@ -88,7 +88,7 @@ class Bot(object):
                 error = r.text
                 raise Exception(error)
             except AttributeError:
-                raise Exception('Unable to parse JSON answer; {e}'.format(e=err))        
+                raise Exception('Unable to parse JSON answer; {e}'.format(e=err)) 
 
         if data.get('status') != 'success':
             raise Exception("HTTP(S) Request Error: {e}".format(e=data.get('message')))
