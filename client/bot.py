@@ -66,7 +66,7 @@ class Bot(object):
         
         self.headers = {'User-Agent':'uPKI client agent', 'Content-Type': 'application/json'}
 
-    def __request(self, url, data=None, cert=None, verb='GET', verify=False):
+    def __request(self, url, data=None, cert=None, verb='GET', verify=False, text=False):
         if verb.upper() not in ['GET','POST']:
             raise NotImplementedError('Unsupported action')
 
@@ -80,6 +80,10 @@ class Bot(object):
 
         if r.status_code != 200:
             raise Exception(r.content)
+
+        # For CA and CRL certificates
+        if text:
+            return r.text
 
         try:
             data = r.json()
@@ -112,7 +116,7 @@ class Bot(object):
     def get_ca_checksum(self):
         try:
             self._output('Check CA certificate', level="DEBUG")
-            data = self.__request(self._ra_url + '/certs/ca.crt')
+            data = self.__request(self._ra_url + '/certs/ca.crt', text=True)
         except Exception as err:
             raise Exception(err)
 
@@ -157,7 +161,7 @@ class Bot(object):
 
         # Protect CA certificate
         try:
-            os.chmod(self.ca_cert, 0o400)
+            os.chmod(self.ca_cert, 0o444)
         except Exception as err:
             raise Exception('Unable to protect CA certificate')
 
@@ -197,8 +201,8 @@ class Bot(object):
         
         try:
             # Protect key and csr from re-write
-            os.chmod(key_file, 0o400)
-            os.chmod(req_file, 0o400)
+            os.chmod(key_file, 0o440)
+            os.chmod(req_file, 0o444)
         except Exception as err:
             raise Exception('Unable to protect key and certificate request')
 
@@ -227,7 +231,7 @@ class Bot(object):
 
         try:
             # Protect certificate from re-write
-            os.chmod(crt_file, 0o400)
+            os.chmod(crt_file, 0o444)
         except Exception as err:
             raise Exception('Unable to protect certificate')
 
@@ -244,14 +248,14 @@ class Bot(object):
 
         # Protect pem from re-write
         try:
-            os.chmod(pem_file, 0o400)
+            os.chmod(pem_file, 0o444)
         except Exception as err:
             raise Exception('Unable to protect certificate pem file')
 
         if p12:
             # Generate p12 certificate
             p12_file = os.path.join(self._path, "{p}.{n}.p12".format(p=profile, n=name))
-            openssl_args = ['openssl','pkcs12','-export','-out',p12_file,'-in',crt_file,'-inkey',key_file]
+            openssl_args = ['openssl','pkcs12','-export','-out',p12_file,'-inkey',key_file,'-in',crt_file,'-in',ca_cert]
             if passwd:
                 self._output('Generate P12 file with password')
                 openssl_args += ['-passout',"pass:{p}".format(p=passwd)]
@@ -265,7 +269,7 @@ class Bot(object):
             
             # Protect p12 from re-write
             try:
-                os.chmod(p12_file, 0o400)
+                os.chmod(p12_file, 0o444)
             except Exception as err:
                 raise Exception('Unable to protect certificate p12 file')
 
@@ -320,7 +324,7 @@ class Bot(object):
 
             try:
                 # Re-enable protection
-                os.chmod(crt_file, 0o400)
+                os.chmod(crt_file, 0o444)
             except Exception as err:
                 raise Exception('Unable to protect certificate')
 
@@ -342,7 +346,7 @@ class Bot(object):
 
             try:
                 # Re-enable protection
-                os.chmod(pem_file, 0o400)
+                os.chmod(pem_file, 0o444)
             except Exception as err:
                 raise Exception('Unable to protect certificate pem file')
 
@@ -369,7 +373,7 @@ class Bot(object):
 
                 try:
                     # Re-enable protection
-                    os.chmod(p12_file, 0o400)
+                    os.chmod(p12_file, 0o444)
                 except Exception as err:
                     raise Exception('Unable to protect certificate p12 file')
 
@@ -378,7 +382,7 @@ class Bot(object):
     def crl(self):
         try:
             self._output('Retrieve CRL', level="DEBUG")
-            data = self.__request(self._ra_url + '/certs/crl.pem')
+            data = self.__request(self._ra_url + '/certs/crl.pem', text=True)
         except Exception as err:
             raise Exception(err)
 
