@@ -116,14 +116,9 @@ class Bot(object):
     def get_ca_checksum(self):
         try:
             self._output('Check CA certificate', level="DEBUG")
-            data = self.__request(self._ra_url + '/certs/ca.crt', text=True)
+            ca_pem = self.__request(self._ra_url + '/certs/ca.crt', text=True)
         except Exception as err:
             raise Exception(err)
-
-        try:
-            ca_pem = data['certificate']
-        except KeyError:
-            raise Exception('Unable to retrieve certificate')
 
         # Init hash function
         received = hashlib.sha256(ca_pem.encode('utf-8')).hexdigest()
@@ -382,14 +377,9 @@ class Bot(object):
     def crl(self):
         try:
             self._output('Retrieve CRL', level="DEBUG")
-            data = self.__request(self._ra_url + '/certs/crl.pem', text=True)
+            crl_pem = self.__request(self._ra_url + '/certs/crl.pem', text=True)
         except Exception as err:
             raise Exception(err)
-
-        try:
-            crl_pem = data['certificate']
-        except KeyError:
-            raise Exception('Unable to retrieve CRL')
 
         # Rewrite CRL file
         with open(self.crl_crt,'wt') as f:
