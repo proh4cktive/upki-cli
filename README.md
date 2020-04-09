@@ -1,4 +1,4 @@
-![ProHacktive](https://prohacktive.io/storage/parameters_images/LmQm4xddzmyFAdGYvQ32oZ9t1P9e8098UubYjnE9.svg)
+![ProHacktive](https://prohacktive.io/storage/parameters_images/LmQm4xddzmyFAdGYvQ32oZ9t1P9e8098UubYjnE9.svg "uPKI from ProHacktive.io")
 
 # µPKI-CLI
 ***NOT READY FOR PRODUCTION USE***
@@ -8,8 +8,8 @@ Known working OS:
 > - Debian 9 Strech
 > - Debian 10 Buster
 > - Ubuntu 18.04
-> - MacOS Catalina 10.15
-> - MacOS Mojave 10.14
+> - MacOS Catalina 10.15 (without update services)
+> - MacOS Mojave 10.14 (without update services)
 
 ## 1. About
 µPki [maɪkroʊ ˈpiː-ˈkeɪ-ˈaɪ] is a small PKI in python that should let you make basic tasks without effort.
