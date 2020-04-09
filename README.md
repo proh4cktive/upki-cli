@@ -52,6 +52,11 @@ Call the client script with 'add' action
 ./client.py --url https://certificates.domain.com add
 ```
 
+For browser integration call the client script with 'add' action and browser flags
+```bash
+./client.py --url https://certificates.domain.com add --firefox --chrome
+```
+
 ### 3.2 List all certificates
 You can list all certificates registered locally (this does not reflect what is configured on the RA server).
 ```bash
