@@ -59,7 +59,7 @@ fi
 echo "[+] Update system"
 sudo apt -y update && sudo apt -y upgrade
 echo "[+] Install required apps"
-sudo apt -y install build-essential libssl-dev libffi-dev python3-dev python3-pip git
+sudo apt -y install build-essential libssl-dev libffi-dev python3-dev python3-pip git libnss3-tools
 
 # Install required libs
 echo "[+] Install required libs"
