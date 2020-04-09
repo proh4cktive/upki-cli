@@ -5,6 +5,8 @@ import sys
 import json
 import hashlib
 import requests
+import platform
+import configparser
 # Prevent CLI output pollution
 requests.packages.urllib3.disable_warnings()
 import subprocess
@@ -22,6 +24,9 @@ class Bot(object):
         self._ra_url = ra_url
         self.ca_cert = os.path.join(self._path, 'ca.crt')
         self.crl_crt = os.path.join(self._path, 'crl.pem')
+
+        stream = os.popen("openssl x509 -noout -subject -in {ca} -nameopt multiline | sed -n 's/ *commonName *= //p'".format(ca=self.ca_cert))
+        self.ca_name = stream.read().rstrip()
         
         try:
             self.collection = client.Collection(self._path)
@@ -31,6 +36,8 @@ class Bot(object):
         try:
             # Store every certificates found
             self.collection.list_nodes()
+            # Check compliance
+            self.collection.check_compliance(self._ra_url)
         except Exception as err:
             raise Exception('Unable to list certificates: {e}'.format(e=err))
 
@@ -113,6 +120,122 @@ class Bot(object):
         except Exception as err:
             sys.out.write('Unable to log: {e}'.format(e=err))
 
+    def _get_mozilla_profile(self):
+        # Switch based on platform
+        if platform.system() == 'Linux':
+            f_path = os.path.expanduser('~/.mozilla/firefox')
+            alt_path = os.path.expanduser('~/snap/firefox/common/.mozilla/firefox')
+            if os.path.isdir(f_path):
+                mozilla_profile = f_path
+            elif os.path.isdir(alt_path):
+                mozilla_profile = alt_path
+            else:
+                raise NotImplementedError('Firefox has not been detected on this system')
+        elif platform.system() == 'Darwin':
+            if os.path.isdir(os.path.expanduser('~/Library/Application Support/Firefox/Profiles')):
+                mozilla_profile = os.path.expanduser('~/Library/Application Support/Firefox/Profiles')
+            else:
+                raise NotImplementedError('Firefox has not been detected on this system')
+        elif platform.system() == 'Windows':
+            if os.path.isdir(os.path.join(os.getenv('APPDATA'), r'Mozilla\Firefox')):
+                mozilla_profile = os.path.join(os.getenv('APPDATA'), r'Mozilla\Firefox')
+            else:
+                raise NotImplementedError('Firefox has not been detected on this system')
+        
+        mozilla_profile_ini = os.path.join(mozilla_profile, r'profiles.ini')
+        profile = configparser.ConfigParser()
+        profile.read(mozilla_profile_ini)
+        data_path = os.path.normpath(os.path.join(mozilla_profile, profile.get('Profile0', 'Path')))
+
+        return data_path
+
+    def _add_to_firefox(self, p12_file, passwd):
+        self._output('Get Mozilla profile', level='debug')
+        data_path = self._get_mozilla_profile()
+        self._output('Found Firefox profile DB: {f}'.format(f=data_path), level='debug')
+            
+        try:
+            self._output('Add {n} in Firefox'.format(n=self.ca_name))
+            cmd = "certutil -A -n '{n}' -t 'TC,,' -i {ca} -d sql:{d}".format(n=self.ca_name, ca=self.ca_cert, d=data_path)
+            self._output("> {c}".format(c=cmd), level='debug')
+            self.__execute(cmd)
+        except Exception as err:
+            self._output('Unable to add Root CA in Firefox', level='error')
+
+        try:
+            self._output('Add user certificate in Firefox')
+            cmd = "pk12util -i {c} -d sql:{d} -W '{p}'".format(c=p12_file, d=data_path, p=passwd)
+            self._output("> {c}".format(c=cmd), level='debug')
+            self.__execute(cmd)
+        except Exception as err:
+            self._output('Unable to add user certificate in Firefox', level='error')
+
+        return True
+
+    def _add_to_chrome(self, p12_file, pem_file, passwd):
+        if platform.system() == 'Linux':
+            if os.path.isdir(os.path.expanduser('~/.pki/nssdb')):
+                data_path = os.path.expanduser('~/.pki/nssdb')
+                    
+                try:
+                    self._output('Add {n} in Chrome'.format(n=self.ca_name))
+                    cmd = "certutil -A -n '{n}' -t 'TC,,' -i {ca} -d sql:{d}".format(n=self.ca_name, ca=self.ca_cert, d=data_path)
+                    self._output("> {c}".format(c=cmd), level='debug')
+                    self.__execute(cmd)
+                except Exception as err:
+                    self._output('Unable to add Root CA in Chrome', level='error')
+
+                try:
+                    self._output('Add user certificate in Chrome')
+                    cmd = "pk12util -i {c} -d sql:{d} -W '{p}'".format(c=p12_file, d=data_path, p=passwd)
+                    self._output("> {c}".format(c=cmd), level='debug')
+                    self.__execute(cmd)
+                except Exception as err:
+                    self._output('Unable to add user certificate in Chrome', level='error')
+            else:
+                raise FileNotFoundError('Chrome has not been detected on this system')
+        
+        elif platform.system() == 'Darwin':
+            # Add to System KeyChain
+            if os.path.isfile('/Library/Keychains/System.keychain'):
+                data_path = '/Library/Keychains/System.keychain'
+                    
+                try:
+                    self._output('[+] Run following command to import ProHacktive Root CA in System KeyChain')
+                    cmd = "sudo security add-trusted-cert -d -r trustRoot -k {d} {ca}".format(d=data_path, ca=self.ca_cert)
+                    self._output("> {c}".format(c=cmd), level='debug')
+                    self.__execute(cmd)
+                except Exception as err:
+                    self._output('Unable to add Root CA in System KeyChain', level='error')
+            # Add to User KeyChain
+            if os.path.isfile(os.path.expanduser('~/Library/Keychains/login.keychain')):
+                data_path = os.path.expanduser('~/Library/Keychains/login.keychain')
+                    
+                try:
+                    self._output('[+] Run following command to import ProHacktive Root CA in User KeyChain')
+                    cmd = "sudo security add-trusted-cert -d -r trustRoot -k {d} {ca}".format(d=data_path, ca=self.ca_cert)
+                    self._output("> {c}".format(c=cmd), level='debug')
+                    self.__execute(cmd)
+                except Exception as err:
+                    self._output('Unable to add Root CA in Login KeyChain', level='error')
+
+                try:
+                    self._output('Add user certificate in KeyChain')
+                    # # Old version need a password
+                    # cmd = "security import {c} -k {d} -P '{p}'".format(c=p12_file, d=data_path, p=passwd)
+                    # New version is passwordless
+                    cmd = "certtool i {c}".format(c=pem_file)
+                    self._output("> {c}".format(c=cmd), level='debug')
+                    self.__execute(cmd)
+                except Exception as err:
+                    self._output('Unable to add user certificate in Login KeyChain', level='error')
+            else:
+                raise FileNotFoundError('No KeyChain detected on this system')
+        else:
+            raise NotImplementedError('Sorry this OS is not supported yet.')
+
+        return True
+
     def get_ca_checksum(self):
         try:
             self._output('Check CA certificate', level="DEBUG")
@@ -162,7 +285,7 @@ class Bot(object):
 
         return True
 
-    def add_node(self, name, profile, sans=[], p12=False, passwd=None):
+    def add_node(self, name, profile, sans=[], p12=False, passwd=None, chrome=False, firefox=False):
         if name is None:
             name = input('Enter your node name (CN): ')
         if profile is None:
@@ -174,8 +297,11 @@ class Bot(object):
         except Exception as err:
             raise Exception(err)
 
+        # Force p12 output if browser certificate is generated
+        p12 = True if (chrome or firefox) else p12
+
         try:
-            self.collection.register(name, profile, sans, p12=p12, passwd=passwd)
+            self.collection.register(self._ra_url, name, profile, sans, p12=p12, passwd=passwd, chrome=chrome, firefox=firefox)
         except Exception as err:
             raise Exception('Unable to add node: {e}'.format(e=err))
 
@@ -250,15 +376,14 @@ class Bot(object):
         if p12:
             # Generate p12 certificate
             p12_file = os.path.join(self._path, "{p}.{n}.p12".format(p=profile, n=name))
-            openssl_args = ['openssl','pkcs12','-export','-out',p12_file,'-inkey',key_file,'-in',crt_file,'-in',ca_cert]
             if passwd:
                 self._output('Generate P12 file with password')
-                openssl_args += ['-passout',"pass:{p}".format(p=passwd)]
             else:
                 self._output('Generate P12 file without password', level='warning')
-
+            
             try:
-                self.__execute(openssl_args)
+                openssl_cmd = 'openssl pkcs12 -export -out {c} -inkey {k} -in {crt} -certfile {ca} -passout pass:{p}'.format(c=p12_file, k=key_file, crt=crt_file, ca=self.ca_cert, p=passwd)
+                self.__execute(openssl_cmd)
             except Exception as err:
                 raise Exception('Unable to generate p12 certificate: {e}'.format(e=err))
             
@@ -267,6 +392,12 @@ class Bot(object):
                 os.chmod(p12_file, 0o444)
             except Exception as err:
                 raise Exception('Unable to protect certificate p12 file')
+
+        if firefox:
+            self._add_to_firefox(p12_file, passwd)
+
+        if chrome:
+            self._add_to_chrome(p12_file, pem_file, passwd)
 
         return True
 
@@ -294,7 +425,10 @@ class Bot(object):
 
             try:
                 self._output('Renew certificate {n} ({p})'.format(n=node['name'], p=node['profile']))
-                data = self.__request(self._ra_url + '/clients/renew', verify=self.ca_cert, cert=(crt_file, key_file))
+                ra_url = self._ra_url if node['url'] else self._ra_url
+                if not ra_url:
+                    raise Exception('RA url is empty.')
+                data = self.__request(ra_url + '/clients/renew', verify=self.ca_cert, cert=(crt_file, key_file))
             except Exception as err:
                 self._output('Unable to renew certificate: {e}'.format(e=err), level="WARNING")
                 continue
@@ -347,14 +481,11 @@ class Bot(object):
 
             if node['p12']:
                 p12_file = os.path.join(self._path, "{p}.{n}.p12".format(p=node['profile'], n=node['name']))
-                # Generate p12 certificate
-                openssl_args = ['openssl','pkcs12','-export','-out',p12_file,'-in',crt_file,'-inkey',key_file]
-                if passwd:
+                if node['passwd']:
                     self._output('Re-Generate P12 file with password')
-                    openssl_args += ['-passout',"pass:{p}".format(p=passwd)]
                 else:
                     self._output('Re-Generate P12 file without password', level='warning')
-
+                
                 try:
                     # Unlock protection
                     os.chmod(p12_file, 0o600)
@@ -362,15 +493,23 @@ class Bot(object):
                     raise Exception('Unable to unlock certificate p12 file protection')
 
                 try:
-                    self.__execute(openssl_args)
+                    # Generate p12 certificate
+                    openssl_cmd = openssl_cmd = 'openssl pkcs12 -export -out {c} -inkey {k} -in {crt} -certfile {ca} -passout pass:{p}'.format(c=p12_file, k=key_file, crt=crt_file, ca=self.ca_cert, p=node['passwd'])
+                    self.__execute(openssl_cmd)
                 except Exception as err:
-                    raise Exception('Unable to generate p12 certificate: {e}'.format(e=err))
+                    raise Exception('Unable to re-generate p12 certificate: {e}'.format(e=err))
 
                 try:
                     # Re-enable protection
                     os.chmod(p12_file, 0o444)
                 except Exception as err:
                     raise Exception('Unable to protect certificate p12 file')
+
+            if node['firefox']:
+                self._add_to_firefox(p12_file, node['passwd'])
+
+            if node['chrome']:
+                self._add_to_chrome(p12_file, pem_file, node['passwd'])
 
         return True
 
@@ -400,7 +539,7 @@ class Bot(object):
 
         self._output('\t\t..:: Nodes found in config ::..')
         for i, node in enumerate(nodes):
-            self._output('\t- {n}\t({p})'.format(n=node['name'],p=node['profile']))
+            self._output('\t- [{i}] {n}\t({p})'.format(i=i, n=node['name'],p=node['profile']))
 
         return True
 

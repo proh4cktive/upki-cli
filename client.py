@@ -31,6 +31,8 @@ def main(argv):
     parser_add = subparsers.add_parser('add', help="Add a node to certify.")
     parser_add.set_defaults(which='add')
     parser_add.add_argument("-n", "--name", help="Define the requested CN for node", default=None)
+    parser_add.add_argument("-c", "--chrome", help="Add node certificate to Chrome", action="store_true", default=False)
+    parser_add.add_argument("-f", "--firefox", help="Add node certificate to Firefox", action="store_true", default=False)
     parser_add.add_argument("-p", "--profile", help="Set the profile name for node", default=None)
     parser_add.add_argument("--p12", help="Generate a p12 certificate file (default: .pem only)", action="store_true", default=False)
     parser_add.add_argument("--passwd", help="Protect p12 file with pass (default: False)", action="store", default=None)
@@ -101,9 +103,13 @@ def main(argv):
         return False
 
     if args.which == 'add':
+        # Url is mandatory for node addition
+        if not args.url:
+            raise Exception('You MUST set an url for node certificate retrieval')
+
         try:
             # Register node in local config
-            bot.add_node(args.name, args.profile, p12=args.p12, passwd=args.passwd)
+            bot.add_node(args.name, args.profile, p12=args.p12, passwd=args.passwd, firefox=args.firefox, chrome=args.chrome)
         except Exception as err:
             logger.error(err)
             sys.exit(1)
@@ -115,6 +121,9 @@ def main(argv):
             logger.error(err)
             sys.exit(1)
     elif args.which == 'crl':
+        # Url is mandatory for CRL retrieval
+        if not args.url:
+            raise Exception('You MUST set an url for CRL retrieval')
         try:
             # Regenerate CRL file
             bot.crl()
