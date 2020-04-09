@@ -30,20 +30,20 @@ class Collection(object):
                 n['url']
             except KeyError:
                 # Set url if not set
-                self.nodes[i]['url'] = args.url
+                self.nodes[i]['url'] = url
             try:
                 n['firefox']
             except KeyError:
                 # Set firefox flag if not set
-                self.nodes[i]['firefox'] = args.firefox
+                self.nodes[i]['firefox'] = firefox
             try:
                 n['chrome']
             except KeyError:
                 # Set firefox flag if not set
-                self.nodes[i]['chrome'] = args.chrome
+                self.nodes[i]['chrome'] = chrome
 
         self.__update(self.nodes)
-        
+
         return True
 
     def list_nodes(self):
