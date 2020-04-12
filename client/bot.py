@@ -25,9 +25,6 @@ class Bot(object):
         self.ca_cert = os.path.join(self._path, 'ca.crt')
         self.crl_crt = os.path.join(self._path, 'crl.pem')
 
-        stream = os.popen("openssl x509 -noout -subject -in {ca} -nameopt multiline | sed -n 's/ *commonName *= //p'".format(ca=self.ca_cert))
-        self.ca_name = stream.read().rstrip()
-        
         try:
             self.collection = client.Collection(self._path)
         except Exception as err:
@@ -52,6 +49,10 @@ class Bot(object):
             self.get_ca_checksum()
         except Exception as err:
             raise Exception('Unable to calculate CA certificate checksum: {e}'.format(e=err))
+
+        if os.path.isfile(self.ca_cert):
+            stream = os.popen("openssl x509 -noout -subject -in {ca} -nameopt multiline | sed -n 's/ *commonName *= //p'".format(ca=self.ca_cert))
+            self.ca_name = stream.read().rstrip()
 
 
     def __setup_connection(self):
