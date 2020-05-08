@@ -377,6 +377,8 @@ class Bot(object):
         if p12:
             # Generate p12 certificate
             p12_file = os.path.join(self._path, "{p}.{n}.p12".format(p=profile, n=name))
+            
+            # Protect p12 if required
             if passwd:
                 self._output('Generate P12 file with password')
             else:
@@ -394,11 +396,11 @@ class Bot(object):
             except Exception as err:
                 raise Exception('Unable to protect certificate p12 file')
 
-        if firefox:
-            self._add_to_firefox(p12_file, passwd)
+            if firefox:
+                self._add_to_firefox(p12_file, passwd)
 
-        if chrome:
-            self._add_to_chrome(p12_file, pem_file, passwd)
+            if chrome:
+                self._add_to_chrome(p12_file, pem_file, passwd)
 
         return True
 
