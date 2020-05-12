@@ -21,6 +21,31 @@ class Collection(object):
         with open(self.conf, 'wt') as raw:
             raw.write(json.dumps(data, indent=4))
 
+    def check_compliance(self, url, firefox=False, chrome=False):
+        if not url:
+            raise Exception('Missing mandatory url')
+
+        for i, n in enumerate(self.nodes):
+            try:
+                n['url']
+            except KeyError:
+                # Set url if not set
+                self.nodes[i]['url'] = url
+            try:
+                n['firefox']
+            except KeyError:
+                # Set firefox flag if not set
+                self.nodes[i]['firefox'] = firefox
+            try:
+                n['chrome']
+            except KeyError:
+                # Set firefox flag if not set
+                self.nodes[i]['chrome'] = chrome
+
+        self.__update(self.nodes)
+
+        return True
+
     def list_nodes(self):
         with open(self.conf, 'rt') as raw:
             self.nodes = json.loads(raw.read())
@@ -45,8 +70,17 @@ class Collection(object):
 
         return (key, cert)
 
-    def register(self, name, profile, sans, p12=False, passwd=None):
-        node = dict({'state': 'init','name': name, 'profile': profile, 'sans': sans, 'p12': p12, 'passwd': passwd})
+    def register(self, url, name, profile, sans, p12=False, passwd=None, chrome=False, firefox=False):
+        node = dict({
+            'state': 'init',
+            'url': url,
+            'name': name,
+            'profile': profile,
+            'sans': sans,
+            'p12': p12,
+            'passwd': passwd,
+            'firefox': firefox,
+            'chrome': chrome})
 
         for n in self.nodes:
             if (n['name'] == node['name']) and (n['profile'] == node['profile']):
