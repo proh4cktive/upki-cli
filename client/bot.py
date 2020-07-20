@@ -286,7 +286,7 @@ class Bot(object):
 
         return True
 
-    def add_node(self, name, profile, sans=[], p12=False, passwd=None, chrome=False, firefox=False):
+    def add_node(self, name, profile, sans=[], p12=False, passwd=None, chrome=False, firefox=False, throwExceptionIfNodeExists=True):
         if name is None:
             name = input('Enter your node name (CN): ')
         if profile is None:
@@ -304,7 +304,14 @@ class Bot(object):
         try:
             self.collection.register(self._ra_url, name, profile, sans, p12=p12, passwd=passwd, chrome=chrome, firefox=firefox)
         except Exception as err:
-            raise Exception('Unable to add node: {e}'.format(e=err))
+            # do not throw exception if exception message concern node existence
+            if not throwExceptionIfNodeExists and "This node already exists" in str(err):
+                return True
+            # do not throw exception if exception message concern certificate generation
+            elif not throwExceptionIfNodeExists and "Certificate already generated!" in str(err):
+                return True
+            else:
+                raise Exception('Unable to add node: {e}'.format(e=err))
 
         try:
             cmd = data['command']
