@@ -87,7 +87,7 @@ class Bot(object):
             raise Exception('Unable to make TLS request: {e}'.format(e=err))
 
         if r.status_code != 200:
-            raise Exception(r.content)
+            raise Exception("HTTP(S) Request Error: {e}".format(e=r.content))
 
         # For CA and CRL certificates
         if text:
@@ -103,12 +103,13 @@ class Bot(object):
                 raise Exception('Unable to parse JSON answer; {e}'.format(e=err)) 
 
         if data.get('status') != 'success':
-            raise Exception("HTTP(S) Request Error: {e}".format(e=data.get('message')))
+            raise Exception(data.get('message', 'Unknown error'))
 
         return data
 
     def __execute(self, cmd, cwd=None):
         try:
+            self._output("Execute command: {c}".format(c=cmd), level='DEBUG')
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self._path, executable='/bin/bash')
             p.wait()
         except Exception as err:
@@ -286,48 +287,48 @@ class Bot(object):
 
         return True
 
-    def add_node(self, name, profile, sans=[], p12=False, passwd=None, chrome=False, firefox=False, throwExceptionIfNodeExists=True):
+    def add_node(self, name, profile, sans=[], p12=False, passwd=None, chrome=False, firefox=False):
         if name is None:
             name = input('Enter your node name (CN): ')
         if profile is None:
             profile = input('Enter your profile: ')
 
-        try:
-            self._output('Request openssl command', level="DEBUG")
-            data = self.__request(self._ra_url + '/magic/' + profile, data={'cn': name, 'sans': sans}, verify=self.ca_cert, verb="POST")
-        except Exception as err:
-            raise Exception(err)
-
-        # Force p12 output if browser certificate is generated
+        # Force p12 output if browser certificate needs to be generated
         p12 = True if (chrome or firefox) else p12
-
-        try:
-            self.collection.register(self._ra_url, name, profile, sans, p12=p12, passwd=passwd, chrome=chrome, firefox=firefox)
-        except Exception as err:
-            # do not throw exception if exception message concern node existence
-            if not throwExceptionIfNodeExists and "This node already exists" in str(err):
-                return True
-            # do not throw exception if exception message concern certificate generation
-            elif not throwExceptionIfNodeExists and "Certificate already generated!" in str(err):
-                return True
-            else:
-                raise Exception('Unable to add node: {e}'.format(e=err))
-
-        try:
-            cmd = data['command']
-        except KeyError:
-            raise Exception('Unable to get magic command')
-
-        try:
-            self.__execute(cmd)
-        except Exception as err:
-            raise Exception('Unable to execute magic command: {e}'.format(e=err))
 
         # Store filenames
         key_file = os.path.join(self._path, "{p}.{n}.key".format(p=profile, n=name))
         req_file = os.path.join(self._path, "{p}.{n}.csr".format(p=profile, n=name))
         crt_file = os.path.join(self._path, "{p}.{n}.crt".format(p=profile, n=name))
-        
+
+        try:
+            self._output('Register node in local collection', level="DEBUG")
+            self.collection.register(self._ra_url, name, profile, sans, p12=p12, passwd=passwd, chrome=chrome, firefox=firefox)
+        except Exception as err:
+            if "node already exists" in str(err).lower():
+                raise RuntimeError(err)
+            raise Exception('Unable to add node: {e}'.format(e=err))
+
+        # Avoid re-generate key if exists
+        if os.path.isfile(key_file) and os.path.isfile(req_file):
+            self._output('Skip key and CSR generation as they already exists', level='WARNING')
+        else:
+            try:
+                self._output('Request openssl command', level="DEBUG")
+                data = self.__request(self._ra_url + '/magic/' + profile, data={'cn': name, 'sans': sans}, verify=self.ca_cert, verb="POST")
+            except Exception as err:
+                raise Exception(err)
+
+            try:
+                cmd = data['command']
+            except KeyError:
+                raise Exception('Unable to get magic command')
+
+            try:
+                self.__execute(cmd)
+            except Exception as err:
+                raise Exception('Unable to execute magic command: {e}'.format(e=err))
+
         try:
             # Protect key and csr from re-write
             os.chmod(key_file, 0o440)
@@ -342,6 +343,8 @@ class Bot(object):
             self._output('Request certificate', level="DEBUG")
             data = self.__request(self._ra_url + '/certify', data={'CSR':csr}, verb="POST", verify=self.ca_cert)
         except Exception as err:
+            if "certificate already generated" in str(err).lower():
+                raise RuntimeError(err)
             raise Exception(err)
 
         try:
@@ -350,9 +353,10 @@ class Bot(object):
             raise Exception('Missing certificate')
 
         try:
-            self.collection.sign(profile, name)
+            self._output('Update certificate status to signed', level="DEBUG")
+            self.collection.sign(name, profile)
         except Exception as err:
-            raise Exception('Unable to sign certificate: {e}'.format(e=err))
+            raise Exception('Unable to update certificate status: {e}'.format(e=err))
 
         with open(crt_file, 'wb') as f:
             self._output('Writing certificate to {p}'.format(p=crt_file))
@@ -460,6 +464,12 @@ class Bot(object):
             with open(crt_file, 'wb') as f:
                 self._output('Renew certificate to {p}'.format(p=crt_file), level="DEBUG")
                 f.write(data['certificate'].encode('utf-8'))
+
+            try:
+                self._output('Update certificate status to signed', level="DEBUG")
+                self.collection.sign(node['name'], node['profile'])
+            except Exception as err:
+                raise Exception('Unable to update certificate status: {e}'.format(e=err))
 
             try:
                 # Re-enable protection
